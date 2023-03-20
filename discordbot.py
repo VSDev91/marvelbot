@@ -1,8 +1,6 @@
 import os
 import marvelbot
 import discord
-import io
-import aiohttp
 import logging
 from dotenv import load_dotenv
 
@@ -18,14 +16,12 @@ async def on_ready():
     print(f'Currently connected to the below servers:\n')
     for guild in client.guilds:
         print(f"Text Channels accessible in {guild} : {guild.id}")
-        # for channel in guild.text_channels:
-        #     print(f"{channel} : {channel.id}")
 
 @client.event
 async def on_message(message):
     bot_command = message.content.lower()
-
-    if bot_command.startswith('marvelbot help'):
+    author = message.author
+    if bot_command.startswith('/marvelbot'):
         await message.channel.send(
             f'Commands to Use:\n' \
             f'Lookup a Character or Hero: type "lookup character TYPE_CHAR_HERE"\n' \
@@ -39,7 +35,6 @@ async def on_message(message):
 
     if bot_command.startswith('lookup character'):
         character = bot_command.split('lookup character')[1].strip()
-        author = message.author
         await message.channel.send(f'Retrieving result(s) for {character.capitalize()}')
         try:
             character_info = marvelbot.character_search(character)
@@ -52,13 +47,9 @@ async def on_message(message):
                                        f"{character_info}")
             return
         else:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(char_img) as resp:
-                    if resp.status != 200:
-                        return await channel.send('Could not download file...')
-                    data = io.BytesIO(await resp.read())
             if len(char_profiles) == 1:
                 char_profiles = ''
+
             embed = discord.Embed(title=char_name, description=char_desc, color=0x109319)
             embed.set_author(name=author.display_name, icon_url=author.avatar)
             embed.add_field(name="Events In", value=f"{', '.join(char_events)}", inline=False)
@@ -67,26 +58,36 @@ async def on_message(message):
             embed.set_footer(text="Data provided by Marvel. © 2023 MARVEL")
             if not char_img.split("/")[-1].startswith('image_not'):
                 embed.set_thumbnail(url=char_img)
+
             await message.channel.send(embed=embed)
 
     if bot_command.startswith('lookup creator'):
         creator = bot_command.split('lookup creator')[1].strip()
         creator_info = marvelbot.creator_search(creator)
-        creator_name, creator_comics = creator_info
-        await message.channel.send(f'Name: {creator_name}\nDescription: Was involved in the creation of {creator_comics} comics.')
+        creator_name, creator_comics, creator_pic_link = creator_info
+
+        embed = discord.Embed(title=creator_name, description=f"Was involved in {creator_comics} comics.", color=0x109319)
+        embed.set_author(name=author.display_name, icon_url=author.avatar)
+        embed.set_footer(text="Data provided by Marvel. © 2023 MARVEL")
+        if not creator_pic_link.split("/")[-1].startswith('image_not'):
+            embed.set_thumbnail(url=creator_pic_link)
+
+        await message.channel.send(embed=embed)
 
     if bot_command.startswith('lookup event'):
         event = bot_command.split('lookup event')[1].strip()
         event_info = marvelbot.event_search(event)
-        event_name, event_desc, event_start, event_end, event_characters, event_creators, event_before, event_next = event_info
-        await message.channel.send(
-            f"Event: {event_name}\n" \
-            f"Description: {event_desc}\n\n" \
-            f"Event Span: From {event_start} to {event_end}\n" \
-            f"Prior Event: {event_before}\n" \
-            f"Next Event: {event_next}\n\n" \
-            f"Characters Involved: {', '.join(event_characters)}\n\n" \
-            f"Writers: {', '.join(event_creators)}\n"
-            )
+        event_name, event_desc, event_characters, event_creators, event_before, event_next, event_pic_link = event_info
+
+        embed = discord.Embed(title=event_name, description=event_desc, color=0x109319)
+        embed.set_author(name=author.display_name, icon_url=author.avatar)
+        embed.add_field(name="Writers", value=f"{', '.join(event_creators)}", inline=False)
+        embed.add_field(name="Characters Involved", value=f"{', '.join(event_characters)}", inline=True)
+        embed.add_field(name="Before/After", value=f"Event Before: {event_before}\nEvent After: {event_next}", inline=True)
+        embed.set_footer(text="Data provided by Marvel. © 2023 MARVEL")
+        if not event_pic_link.split("/")[-1].startswith('image_not'):
+            embed.set_thumbnail(url=event_pic_link)
+
+        await message.channel.send(embed=embed)
 
 client.run(DISCORD_TOKEN)

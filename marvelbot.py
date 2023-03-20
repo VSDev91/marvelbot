@@ -38,53 +38,11 @@ def character_search(character):
         char_id = character_profile['id']
         char_name = character_profile['name']
         char_desc = character_profile['description']
-        if char_desc == '':
-            char_desc = 'No description available, get fucked. :middle_finger: :grin: :middle_finger: '
-        char_thumbnail = character_profile['thumbnail']
-        char_pic_link = f"{char_thumbnail['path']}.{char_thumbnail['extension']}"
+        img_link = character_profile['thumbnail']
+        img_link = f"{img_link['path']}.{img_link['extension']}"
         char_events, related_chars = character_events(char_id)
 
-    return char_name, char_desc, character_profiles, char_events, related_chars, char_pic_link
-
-
-def creator_search(character):
-    params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), 'nameStartsWith': character};
-    response = requests.get('https://gateway.marvel.com:443/v1/public/creators',
-                            params=params)
-    data = response.json()
-    creator_profile = data['data']['results'][0]
-    creator_id = creator_profile['id']
-    creator_name = creator_profile['fullName']
-    creator_comics = creator_profile['comics']['available']
-
-    return creator_name, creator_comics
-
-
-def event_search(character):
-    params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), 'nameStartsWith': character};
-    response = requests.get('https://gateway.marvel.com:443/v1/public/events',
-                            params=params)
-    data = response.json()
-    event_profile = data['data']['results'][0]
-    event_name = event_profile['title']
-    event_desc = event_profile['description']
-    event_start = event_profile['start'].split()[0]
-    event_end = event_profile['end'].split()[0]
-    event_characters = [x['name'] for x in event_profile['characters']['items']]
-    event_creators = [x['name'] for x in event_profile['creators']['items'] if x['role'] == 'writer']
-    event_next = event_profile['next']['name']
-    event_before = event_profile['previous']['name']
-    return event_name, event_desc, event_start, event_end, event_characters, event_creators, event_before, event_next
-
-
-def character_events(char_id):
-    params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), "limit": 100};
-    response = requests.get(f'https://gateway.marvel.com:443/v1/public/characters/{char_id}/events',
-                            params=params)
-    data = response.json()
-    char_events = [x['title'] for x in data['data']['results']]
-    related_chars = related_characters(data['data']['results'])
-    return char_events, related_chars
+    return char_name, char_desc, character_profiles, char_events, related_chars, img_link
 
 
 def related_characters(events):
@@ -111,3 +69,42 @@ def attempt_search(character):
     return responses
 
 
+def creator_search(character):
+    params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), 'nameStartsWith': character};
+    response = requests.get('https://gateway.marvel.com:443/v1/public/creators',
+                            params=params)
+    data = response.json()
+    creator_profile = data['data']['results'][0]
+    creator_name = creator_profile['fullName']
+    creator_comics = creator_profile['comics']['available']
+    img_link = creator_profile['thumbnail']
+    img_link = f"{img_link['path']}.{img_link['extension']}"
+
+    return creator_name, creator_comics, img_link
+
+
+def event_search(character):
+    params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), 'nameStartsWith': character};
+    response = requests.get('https://gateway.marvel.com:443/v1/public/events',
+                            params=params)
+    data = response.json()
+    event_profile = data['data']['results'][0]
+    event_name = event_profile['title']
+    event_desc = event_profile['description']
+    img_link = event_profile['thumbnail']
+    img_link = f"{img_link['path']}.{img_link['extension']}"
+    event_characters = [x['name'] for x in event_profile['characters']['items']]
+    event_creators = [x['name'] for x in event_profile['creators']['items'] if x['role'] == 'writer']
+    event_next = event_profile['next']['name']
+    event_before = event_profile['previous']['name']
+    return event_name, event_desc, event_characters, event_creators, event_before, event_next, img_link
+
+
+def character_events(char_id):
+    params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), "limit": 100};
+    response = requests.get(f'https://gateway.marvel.com:443/v1/public/characters/{char_id}/events',
+                            params=params)
+    data = response.json()
+    char_events = [x['title'] for x in data['data']['results']]
+    related_chars = related_characters(data['data']['results'])
+    return char_events, related_chars
