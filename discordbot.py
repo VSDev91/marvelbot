@@ -41,6 +41,8 @@ async def on_message(message):
             char_name, char_desc, char_profiles, char_events, related_chars, img_link = character_info
         except (KeyError, TypeError, ValueError, IndexError) as e:
             await error_logging(character, e, message)
+            if character_info:
+                await message.channel.send(f"Try {character_info}")
         else:
             embed = discord.Embed(title=char_name, description=char_desc, color=0x109319)
             embed.add_field(name="Events In", value=f"{', '.join(char_events)}", inline=False)
