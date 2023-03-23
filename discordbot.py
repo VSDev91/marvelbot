@@ -38,56 +38,60 @@ async def on_message(message):
         await message.channel.send(f'Retrieving result(s) for {character.capitalize()}')
         try:
             character_info = marvelbot.character_search(character)
-            char_name, char_desc, char_profiles, char_events, related_chars, char_img = character_info
-        except (KeyError, TypeError, ValueError) as e:
-            with open('log_file.txt', 'a') as file:
-                file.write(f"Term Searched: {character}\n{e}\n\n")
-            await message.channel.send(f'Unable to find anything starting with that, try again.\n\n'
-                                       f"Maybe try a term below:\n"\
-                                       f"{character_info}")
-            return
+            char_name, char_desc, char_profiles, char_events, related_chars, img_link = character_info
+        except (KeyError, TypeError, ValueError, IndexError) as e:
+            await error_logging(character, e, message)
         else:
-            if len(char_profiles) == 1:
-                char_profiles = ''
-
             embed = discord.Embed(title=char_name, description=char_desc, color=0x109319)
-            embed.set_author(name=author.display_name, icon_url=author.avatar)
             embed.add_field(name="Events In", value=f"{', '.join(char_events)}", inline=False)
             embed.add_field(name="Commonly With", value=f"{', '.join(related_chars)}", inline=True)
             embed.add_field(name="Similarly Named", value=f"{', '.join(char_profiles[1:])}", inline=True)
-            embed.set_footer(text="Data provided by Marvel. © 2023 MARVEL")
-            if not char_img.split("/")[-1].startswith('image_not'):
-                embed.set_thumbnail(url=char_img)
+            embed_img(img_link, embed, author)
 
             await message.channel.send(embed=embed)
 
     if bot_command.startswith('lookup creator'):
         creator = bot_command.split('lookup creator')[1].strip()
-        creator_info = marvelbot.creator_search(creator)
-        creator_name, creator_comics, creator_pic_link = creator_info
+        try:
+            creator_info = marvelbot.creator_search(creator)
+            creator_name, creator_comics, img_link = creator_info
+        except (KeyError, TypeError, ValueError, IndexError) as e:
+            await error_logging(creator, e, message)
+        else:
+            embed = discord.Embed(title=creator_name, description=f"Was involved in {creator_comics} comics.", color=0x109319)
+            embed_img(img_link, embed, author)
 
-        embed = discord.Embed(title=creator_name, description=f"Was involved in {creator_comics} comics.", color=0x109319)
-        embed.set_author(name=author.display_name, icon_url=author.avatar)
-        embed.set_footer(text="Data provided by Marvel. © 2023 MARVEL")
-        if not creator_pic_link.split("/")[-1].startswith('image_not'):
-            embed.set_thumbnail(url=creator_pic_link)
-
-        await message.channel.send(embed=embed)
+            await message.channel.send(embed=embed)
 
     if bot_command.startswith('lookup event'):
         event = bot_command.split('lookup event')[1].strip()
-        event_info = marvelbot.event_search(event)
-        event_name, event_desc, event_characters, event_creators, event_before, event_next, event_pic_link = event_info
+        try:
+            event_info = marvelbot.event_search(event)
+            event_name, event_desc, event_characters, event_creators, event_before, event_next, img_link = event_info
+        except (KeyError, TypeError, ValueError, IndexError) as e:
+            await error_logging(event, e, message)
+        else:
+            embed = discord.Embed(title=event_name, description=event_desc, color=0x109319)
+            embed.add_field(name="Writers", value=f"{', '.join(event_creators)}", inline=False)
+            embed.add_field(name="Characters Involved", value=f"{', '.join(event_characters)}", inline=True)
+            embed.add_field(name="Before/After", value=f"Event Before: {event_before}\nEvent After: {event_next}", inline=True)
+            embed_img(img_link, embed, author)
 
-        embed = discord.Embed(title=event_name, description=event_desc, color=0x109319)
-        embed.set_author(name=author.display_name, icon_url=author.avatar)
-        embed.add_field(name="Writers", value=f"{', '.join(event_creators)}", inline=False)
-        embed.add_field(name="Characters Involved", value=f"{', '.join(event_characters)}", inline=True)
-        embed.add_field(name="Before/After", value=f"Event Before: {event_before}\nEvent After: {event_next}", inline=True)
-        embed.set_footer(text="Data provided by Marvel. © 2023 MARVEL")
-        if not event_pic_link.split("/")[-1].startswith('image_not'):
-            embed.set_thumbnail(url=event_pic_link)
+            await message.channel.send(embed=embed)
 
-        await message.channel.send(embed=embed)
+
+def embed_img(img_link, embed, author):
+    img_link = f"{img_link['path']}.{img_link['extension']}"
+    if not img_link.split("/")[-1].startswith('image_not'):
+        embed.set_thumbnail(url=img_link)
+    embed.set_author(name=author.display_name, icon_url=author.avatar)
+    embed.set_footer(text="Data provided by Marvel. © 2023 MARVEL")
+
+
+async def error_logging(term, e, message):
+    with open('log_file.txt', 'a') as file:
+        file.write(f"Term Searched: {term}\n{message.content}\n{e}\n\n")
+    await message.channel.send(f'Unable to find anything starting with {term}, try again.')
+    return
 
 client.run(DISCORD_TOKEN)
