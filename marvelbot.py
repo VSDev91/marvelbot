@@ -33,7 +33,7 @@ def character_search(character):
         character_profiles = [x['name'] for x in data['data']['results']]
         character_profile = data['data']['results'][0]
     except IndexError:
-        return attempt_search(character)
+        return retrieve_all(character, 'nameStartsWith', 'characters', 'name')
     else:
         char_id = character_profile['id']
         char_name = character_profile['name']
@@ -62,22 +62,6 @@ def related_characters(events):
     most_common_chars = counts.most_common(5)
     most_common_chars = [x for x, y in most_common_chars]
     return most_common_chars
-
-
-def attempt_search(character):
-    all_responses = []
-    terms_to_search = character.split()
-    for term in terms_to_search:
-        cleaned_term = [char for char in term if char.isalpha()]
-        cleaned_term = ''.join(cleaned_term)
-        params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), 'nameStartsWith': cleaned_term};
-        response = requests.get('https://gateway.marvel.com:443/v1/public/characters',
-                                params=params)
-        data = response.json()
-        term_response = [x['name'] for x in data['data']['results']]
-        all_responses.append([x for x in term_response if len(term_response) > 0])
-    responses = ', '.join(list(chain.from_iterable(all_responses)))
-    return responses
 
 
 def creator_search(character):
@@ -110,3 +94,59 @@ def event_search(character):
     event_creators = [x['name'] for x in event_profile['creators']['items'] if x['role'] == 'writer']
 
     return event_name, event_desc, event_characters, event_creators, event_before, event_next, img_link
+
+def comic_search(comic):
+    return retrieve_all(comic, 'titleStartsWith', 'comics', 'title')
+    # params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), 'titleStartsWith': comic, "limit": "100"};
+    # response = requests.get('https://gateway.marvel.com:443/v1/public/comics',
+    #                         params=params)
+    # data = response.json()
+    # try:
+    #     comic_profile = data['data']['results'][0]
+    # except IndexError:
+    # else:
+    #     comic_id = comic_profile['id']
+    #     comic_title = comic_profile['title']
+    #     comic_desc = comic_profile['description']
+    #     comic_series = comic_profile['series']['name']
+    #     comic_series_id = comic_profile['series']['resourceURI'].split('1')[-1]
+    #     comic_creators = [x['name'] for x in comic_profile['creators']['items'] if x['role'] == 'writer']
+    #     comic_char = [x['name'] for x in comic_profile['characters']['items']]
+    #     comic_img = comic_profile['thumbnail']
+    # fetch back using comic_series_id to pull back series info
+    # return comic_title, comic_desc, comic_series, comic_creators, comic_char, comic_img
+
+def series_search(series):
+    return retrieve_all(series, 'titleStartsWith', 'series', 'title' )
+#     params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), 'titleStartsWith': series, "limit": "100"};
+#     response = requests.get('https://gateway.marvel.com:443/v1/public/series',
+#                             params=params)
+#     data = response.json()
+#
+#     series_profile = data['data']['results'][0]
+#     id = series_profile['id']
+#     title = series_profile['title']
+#     desc = series_profile['description']
+#     creators = [x['name'] for x in series_profile['creators']['items'] if x['role'] == 'writer']
+#     chars = [x['name'] for x in series_profile['characters']['items']]
+#     comics = [x['name'] for x in series_profile['comics']['items']]
+#     img_link = series_profile['thumbnail']
+#     next = series_profile['next']
+#     before = series_profile['previous']
+# # aggregate all possible series
+#     return title, desc, creators, chars, comics, img_link, next, before
+
+
+def retrieve_all(term_to_search, param_filter, url, loop_var):
+    all_responses = []
+    terms_to_search = term_to_search.split()
+    for term in terms_to_search:
+        cleaned_term = ''.join([char for char in term if char.isalpha()])
+        params = {'ts': timestamp, 'apikey': pub_key, 'hash': hash_params(), param_filter: cleaned_term};
+        response = requests.get(f'https://gateway.marvel.com:443/v1/public/{url}',
+                                params=params)
+        data = response.json()
+        term_response = [x[loop_var] for x in data['data']['results']]
+        all_responses.append([x for x in term_response if len(term_response) > 0])
+    responses = ', '.join(list(chain.from_iterable(all_responses)))
+    return responses

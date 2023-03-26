@@ -82,10 +82,50 @@ async def on_message(message):
             await message.channel.send(embed=embed)
 
 
+    if bot_command.startswith('lookup comic'):
+        comic = bot_command.split('lookup comic')[1].strip()
+        comic_info = marvelbot.comic_search(comic)
+        await message.channel.send(f"Try {comic_info}")
+        #     comic_title, comic_desc, comic_series, comic_creators, comic_char, img_link = comic_info
+        # except (KeyError, TypeError, ValueError, IndexError) as e:
+        #     await error_logging(comic, e, message)
+        #     if comic_info:
+        #         await message.channel.send(f"Try {comic_info}")
+        # else:
+        #     embed = discord.Embed(title=comic_title, description=comic_desc, color=0x109319)
+        #     embed.add_field(name="Comic Series", value=f"{comic_series}", inline=False)
+        #     embed.add_field(name="Characters Involved", value=f"{', '.join(comic_char)}", inline=True)
+        #     embed.add_field(name="Writers", value=f"{', '.join(comic_creators)}", inline=False)
+        #     embed_img(img_link, embed, author)
+        #
+        #     await message.channel.send(embed=embed)
+
+
+    if bot_command.startswith('lookup series'):
+        series = bot_command.split('lookup series')[1].strip()
+        series_info = marvelbot.series_search(series)
+        await message.channel.send(f"Try {series_info}")
+        # series = bot_command.split('lookup series')[1].strip()
+        # try:
+        #     series_info = marvelbot.series_search(series)
+        #     title, desc, creators, chars, comics, img_link, next, before = series_info
+        # except (KeyError, TypeError, ValueError, IndexError) as e:
+        #     await error_logging(comic, e, message)
+        # else:
+        #     embed = discord.Embed(title=title, description=desc, color=0x109319)
+        #     embed.add_field(name="Comics", value=f"{', '.join(comics)}", inline=False)
+        #     embed.add_field(name="Characters Involved", value=f"{', '.join(chars)}", inline=True)
+        #     embed.add_field(name="Writers", value=f"{', '.join(creators)}", inline=False)
+        #     embed_img(img_link, embed, author)
+        #     embed.add_field(name="Before/After", value=f"Before: {before}\nAfter: {next}", inline=True)
+        #
+        #     await message.channel.send(embed=embed)
+
+
 def embed_img(img_link, embed, author):
     img_link = f"{img_link['path']}.{img_link['extension']}"
     if not img_link.split("/")[-1].startswith('image_not'):
-        embed.set_thumbnail(url=img_link)
+        embed.set_image(url=img_link)
     embed.set_author(name=author.display_name, icon_url=author.avatar)
     embed.set_footer(text="Data provided by Marvel. © 2023 MARVEL")
 
